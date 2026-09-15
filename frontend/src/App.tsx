@@ -12,6 +12,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [pendingDates, setPendingDates] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     void loadMonth(currentDate);
@@ -43,19 +44,45 @@ function App() {
 
   const handleDayClick = async (day: Date) => {
     const dateString = format(day, 'yyyy-MM-dd');
+    if (pendingDates.has(dateString)) return;
+
+    const wasAttended = attendedDates.has(dateString);
+    const previousMonthData = monthData;
+    const nextDates = wasAttended
+      ? [...attendedDates].filter((date) => date !== dateString).sort()
+      : [...attendedDates, dateString].sort();
+
+    setPendingDates((dates) => new Set(dates).add(dateString));
+    setMonthData((current) => {
+      if (!current) return current;
+
+      const attendedDays = nextDates.length;
+      return {
+        ...current,
+        dates: nextDates,
+        attendedDays,
+        remainingDays: Math.max(0, current.goal - attendedDays),
+        percentage: current.goal === 0 ? 0 : (attendedDays / current.goal) * 100
+      };
+    });
 
     try {
-      if (attendedDates.has(dateString)) {
+      if (wasAttended) {
         await attendanceApi.deleteAttendance(dateString);
         setToast('Asistencia eliminada');
       } else {
         await attendanceApi.createAttendance(dateString);
         setToast('✓ Asistencia registrada');
       }
-
-      await loadMonth(currentDate);
     } catch (err) {
+      setMonthData(previousMonthData);
       setError(err instanceof Error ? err.message : 'Error en la operación');
+    } finally {
+      setPendingDates((dates) => {
+        const next = new Set(dates);
+        next.delete(dateString);
+        return next;
+      });
     }
   };
 
@@ -153,6 +180,7 @@ function App() {
                     key={formatted}
                     className={['day-cell', isAttended ? 'attended' : '', isCurrentMonth ? '' : 'muted', isToday ? 'today' : ''].filter(Boolean).join(' ')}
                     onClick={() => handleDayClick(day)}
+                    disabled={pendingDates.has(formatted)}
                     aria-label={`Día ${formatted}`}
                     aria-pressed={isAttended}
                   >

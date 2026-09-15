@@ -2,9 +2,28 @@ import { AttendanceMonthResponse, AttendanceResponse } from '../types/attendance
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? 'https://controlasistencia-vv41.onrender.com/api';
+const REQUEST_TIMEOUT_MS = 45_000;
+
+async function fetchWithTimeout(input: string, init?: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${input}`, { ...init, signal: controller.signal });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('La API está tardando demasiado. El servicio puede estar iniciándose en Render.');
+    }
+
+    throw error;
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
 
 async function fetchJson<T>(input: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${input}`, init);
+  const response = await fetchWithTimeout(`${API_BASE_URL}${input}`, init);
 
   if (!response.ok) {
     const errorBody = await response.json().catch(() => ({}));
@@ -30,7 +49,7 @@ export const attendanceApi = {
   },
 
   async deleteAttendance(date: string): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/attendance/${date}`, {
+    const response = await fetchWithTimeout(`${API_BASE_URL}/attendance/${date}`, {
       method: 'DELETE'
     });
 
@@ -41,7 +60,7 @@ export const attendanceApi = {
   },
 
   async downloadReport(year: number, month: number, format: 'xlsx' | 'pdf'): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/reports/monthly?year=${year}&month=${month}&format=${format}`);
+    const response = await fetchWithTimeout(`${API_BASE_URL}/reports/monthly?year=${year}&month=${month}&format=${format}`);
 
     if (!response.ok) {
       throw new Error('Error al descargar el reporte');
