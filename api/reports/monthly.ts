@@ -1,9 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import ExcelJS from 'exceljs';
 import PDFDocument from 'pdfkit';
-import { database, ensureSchema } from '../_lib/db';
-import { getMonthData, monthBounds } from '../_lib/attendance';
-import { handleOptions, parseYearMonth, sendError } from '../_lib/http';
+import { database, ensureSchema } from '../_lib/db.js';
+import { getMonthData, monthBounds } from '../_lib/attendance.js';
+import { handleOptions, parseYearMonth, sendError } from '../_lib/http.js';
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
   if (handleOptions(request, response)) return;

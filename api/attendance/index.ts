@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { database, ensureSchema } from '../_lib/db';
-import { getMonthData } from '../_lib/attendance';
-import { handleOptions, isValidDate, parseYearMonth, sendError } from '../_lib/http';
+import { database, ensureSchema } from '../_lib/db.js';
+import { getMonthData } from '../_lib/attendance.js';
+import { handleOptions, isValidDate, parseYearMonth, sendError } from '../_lib/http.js';
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
   if (handleOptions(request, response)) return;

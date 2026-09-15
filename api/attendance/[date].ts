@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { database, ensureSchema } from '../_lib/db';
-import { handleOptions, isValidDate, sendError } from '../_lib/http';
+import { database, ensureSchema } from '../_lib/db.js';
+import { handleOptions, isValidDate, sendError } from '../_lib/http.js';
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
   if (handleOptions(request, response)) return;
