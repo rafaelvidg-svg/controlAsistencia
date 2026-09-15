@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { attendanceApi } from './services/attendanceApi';
 import { AttendanceMonthResponse } from './types/attendance';
 import { getCalendarDays, getMonthLabel, getNextMonth, getPreviousMonth, isCurrentMonthDay, isDateToday } from './utils/dateUtils';
@@ -238,7 +238,7 @@ function App() {
                   <ul>
                     {monthData.dates.length > 0 ? (
                       monthData.dates.map((date) => (
-                        <li key={date}>{format(new Date(date), 'dd/MM/yyyy')}</li>
+                        <li key={date}>{format(parseISO(date), 'dd/MM/yyyy')}</li>
                       ))
                     ) : (
                       <li className="empty-list">Sin asistencias registradas</li>
