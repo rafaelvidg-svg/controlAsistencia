@@ -29,7 +29,7 @@ async function fetchJson<T>(input: string, init?: RequestInit): Promise<T> {
 
   if (!response.ok) {
     const errorBody = await response.json().catch(() => ({}));
-    throw new Error(errorBody.message ?? 'Error en la petición');
+    throw new Error(errorBody.message ?? `Error en la petición (${response.status})`);
   }
 
   return response.json();
