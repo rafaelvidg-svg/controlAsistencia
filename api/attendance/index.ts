@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { database, ensureSchema } from './_lib/db';
-import { getMonthData } from './_lib/attendance';
-import { handleOptions, isValidDate, parseYearMonth, sendError } from './_lib/http';
+import { database, ensureSchema } from '../_lib/db';
+import { getMonthData } from '../_lib/attendance';
+import { handleOptions, isValidDate, parseYearMonth, sendError } from '../_lib/http';
 
 export default async function handler(request: VercelRequest, response: VercelResponse) {
   if (handleOptions(request, response)) return;
@@ -49,7 +49,7 @@ export default async function handler(request: VercelRequest, response: VercelRe
     sendError(response, 405, 'Method not allowed');
   } catch (error) {
     console.error(error);
-    sendError(response, 500, 'An unexpected error occurred');
+    sendError(response, 500, error instanceof Error ? error.message : 'An unexpected error occurred');
   }
 }
 
