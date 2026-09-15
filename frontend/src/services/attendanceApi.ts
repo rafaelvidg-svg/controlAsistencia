@@ -1,7 +1,8 @@
 import { AttendanceMonthResponse, AttendanceResponse } from '../types/attendance';
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ?? '/api';
+const configuredApiUrl = import.meta.env.VITE_API_BASE_URL ?? '';
+const API_BASE_URL = configuredApiUrl.replace(/\/+$/, '').replace(/\/api$/, '') || '';
+const API_PATH = '/api';
 const REQUEST_TIMEOUT_MS = 15_000;
 
 async function fetchWithTimeout(input: string, init?: RequestInit): Promise<Response> {
@@ -10,7 +11,7 @@ async function fetchWithTimeout(input: string, init?: RequestInit): Promise<Resp
 
   let response: Response;
   try {
-    response = await fetch(`${API_BASE_URL}${input}`, { ...init, signal: controller.signal });
+    response = await fetch(`${API_BASE_URL}${API_PATH}${input}`, { ...init, signal: controller.signal });
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
       throw new Error('La API está tardando demasiado. Inténtalo de nuevo.');
@@ -51,7 +52,7 @@ export const attendanceApi = {
   },
 
   async deleteAttendance(date: string): Promise<void> {
-    const response = await fetchWithTimeout(`${API_BASE_URL}/attendance/${date}`, {
+    const response = await fetchWithTimeout(`/attendance/${date}`, {
       method: 'DELETE'
     });
 
@@ -62,7 +63,7 @@ export const attendanceApi = {
   },
 
   async downloadReport(year: number, month: number, format: 'xlsx' | 'pdf'): Promise<void> {
-    const response = await fetchWithTimeout(`${API_BASE_URL}/reports/monthly?year=${year}&month=${month}&format=${format}`);
+    const response = await fetchWithTimeout(`/reports/monthly?year=${year}&month=${month}&format=${format}`);
 
     if (!response.ok) {
       throw new Error('Error al descargar el reporte');
