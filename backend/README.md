@@ -20,21 +20,18 @@ Backend de la aplicación de control de asistencia a oficina.
 - Maven 3.9+
 - PostgreSQL 15+
 
-## Configuración
-
-1. Crear una base de datos llamada `office_attendance`.
-2. Ajustar credenciales en `src/main/resources/application.yml`.
-3. Ejecutar con perfil `dev` o `prod`.
-
-## Ejecutar
-
-```bash
-mvn spring-boot:run
-```
-
 ## Swagger
 
-- URL: `http://localhost:8080/swagger-ui.html`
+- URL: `https://tu-backend-publico.com/swagger-ui.html`
+
+## Variables de entorno de producción
+
+- `SPRING_PROFILES_ACTIVE=prod`
+- `DB_HOST`
+- `DB_PORT`
+- `DB_NAME`
+- `DB_USERNAME`
+- `DB_PASSWORD`
 
 ## Endpoints principales
 
@@ -44,9 +41,3 @@ mvn spring-boot:run
 - `GET /api/attendance/summary?year=2026&month=9`
 - `GET /api/reports/monthly?year=2026&month=9&format=xlsx`
 - `GET /api/reports/monthly?year=2026&month=9&format=pdf`
-
-## Tests
-
-```bash
-mvn test
-```

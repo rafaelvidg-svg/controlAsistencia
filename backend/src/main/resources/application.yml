@@ -1,11 +1,6 @@
 spring:
   application:
     name: office-attendance
-  datasource:
-    url: jdbc:postgresql://localhost:5432/office_attendance
-    username: postgres
-    password: postgres
-    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: validate

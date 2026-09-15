@@ -1,20 +1,19 @@
-# Despliegue en Netlify + backend externo
+# Despliegue en Vercel
 
-## 1) Frontend en Netlify
+## Frontend en Vercel
 
-1. Conecta este repositorio a Netlify.
-2. Configura el sitio con estos valores:
-   - Build command: `npm run build`
-   - Publish directory: `frontend/dist`
-3. En Netlify > Site settings > Environment variables, añade:
+1. Importa este repositorio en Vercel.
+2. Mantén la raíz del repositorio como Root Directory.
+3. Vercel usará `vercel.json` para instalar y compilar `frontend`.
+4. En Project Settings > Environment Variables, añade:
    - `VITE_API_BASE_URL` = `https://tu-backend-deployado.com/api`
-4. Haz el deploy.
+5. Ejecuta el deploy.
 
-> El proyecto ya incluye [netlify.toml](netlify.toml) para build y SPA routing.
+El resultado publicado será `frontend/dist` y las rutas de la SPA funcionarán mediante la regla de reescritura incluida.
 
-## 2) Backend en un servicio externo
+## Backend en un servicio externo
 
-Netlify no puede ejecutar el backend Java. Debes desplegarlo en un servicio como Render, Railway, Fly.io o Azure App Service.
+Vercel no ejecuta este backend Java/Spring Boot como una función. Despliégalo en Render, Railway, Fly.io o Azure App Service.
 
 ### Variables de entorno recomendadas
 
@@ -46,7 +45,7 @@ Netlify no puede ejecutar el backend Java. Debes desplegarlo en un servicio como
 
 ## 4) Verificación final
 
-1. Abre la URL de Netlify.
+1. Abre la URL de Vercel.
 2. Comprueba que el calendario carga sin errores.
 3. Haz una operación de registro o eliminación.
 4. Verifica que la API responda con `200` desde tu backend externo.

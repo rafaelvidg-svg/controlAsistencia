@@ -8,16 +8,14 @@ Aplicación web para registrar y controlar los días que asisto presencialmente 
 - Frontend: React + TypeScript + Vite
 - Reportes: Excel y PDF
 - API: Swagger/OpenAPI
-- Infraestructura: Docker Compose
+- Publicación: Vercel para el frontend y un servicio externo para la API
 
-## Requisitos
+## Publicación en Vercel
 
-- Java 21
-- Maven
-- Node.js 20+
-- npm
-- Docker + Docker Compose (opcional)
-- PostgreSQL 16 (opcional si no se usa Docker)
+1. Importa este repositorio en Vercel.
+2. Mantén la raíz del repositorio como Root Directory.
+3. Define `VITE_API_BASE_URL` con la URL pública del backend y el sufijo `/api`.
+4. Publica el proyecto. `vercel.json` configura el build de `frontend` y el routing de la SPA.
 
 ## Estructura
 
@@ -26,43 +24,20 @@ Aplicación web para registrar y controlar los días que asisto presencialmente 
 ├── backend/
 │   ├── src/
 │   ├── pom.xml
-│   ├── Dockerfile
 │   └── README.md
 ├── frontend/
 │   ├── src/
 │   ├── package.json
 │   ├── Dockerfile
 │   └── README.md
-├── docker-compose.yml
-├── .env.example
+├── vercel.json
 ├── README.md
 └── .gitignore
 ```
 
-## Ejecutar backend
-
-```bash
-cd backend
-mvn spring-boot:run
-```
-
-## Ejecutar frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-## Ejecutar con Docker
-
-```bash
-docker compose up --build
-```
-
 ## Swagger
 
-- http://localhost:8080/swagger-ui.html
+- `https://tu-backend-publico.com/swagger-ui.html`
 
 ## Endpoints principales
 
