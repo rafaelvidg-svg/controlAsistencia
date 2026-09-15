@@ -20,6 +20,8 @@ async function fetchWithTimeout(input: string, init?: RequestInit): Promise<Resp
   } finally {
     window.clearTimeout(timeout);
   }
+
+  return response;
 }
 
 async function fetchJson<T>(input: string, init?: RequestInit): Promise<T> {
