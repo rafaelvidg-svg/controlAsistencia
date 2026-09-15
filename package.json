@@ -2,11 +2,11 @@
   "name": "office-attendance-vercel",
   "private": true,
   "version": "1.0.0",
-  "type": "module",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
+    "postinstall": "npm install --prefix frontend --ignore-scripts --no-audit --no-fund",
     "build": "npm run build --prefix frontend",
     "test": "npm test --prefix frontend"
   },
