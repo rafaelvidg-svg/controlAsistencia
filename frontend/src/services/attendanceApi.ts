@@ -1,8 +1,8 @@
 import { AttendanceMonthResponse, AttendanceResponse } from '../types/attendance';
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ?? 'https://controlasistencia-vv41.onrender.com/api';
-const REQUEST_TIMEOUT_MS = 45_000;
+  import.meta.env.VITE_API_BASE_URL ?? '/api';
+const REQUEST_TIMEOUT_MS = 15_000;
 
 async function fetchWithTimeout(input: string, init?: RequestInit): Promise<Response> {
   const controller = new AbortController();
@@ -13,7 +13,7 @@ async function fetchWithTimeout(input: string, init?: RequestInit): Promise<Resp
     response = await fetch(`${API_BASE_URL}${input}`, { ...init, signal: controller.signal });
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
-      throw new Error('La API está tardando demasiado. El servicio puede estar iniciándose en Render.');
+      throw new Error('La API está tardando demasiado. Inténtalo de nuevo.');
     }
 
     throw error;

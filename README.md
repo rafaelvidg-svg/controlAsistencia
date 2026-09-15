@@ -1,65 +1,48 @@
 # Office Attendance
 
-Aplicación web para registrar y controlar los días que asisto presencialmente a la oficina.
+Aplicación web para registrar y controlar los días de asistencia a la oficina.
 
 ## Arquitectura
 
-- Backend: Java 21 + Spring Boot 3 + PostgreSQL
 - Frontend: React + TypeScript + Vite
+- API: funciones serverless de Vercel
+- Base de datos: PostgreSQL en Neon
 - Reportes: Excel y PDF
-- API: Swagger/OpenAPI
-- Publicación: Vercel para el frontend y un servicio externo para la API
+
+Java, Spring Boot, Maven, Docker y Render ya no son necesarios.
 
 ## Publicación en Vercel
 
-1. Importa este repositorio en Vercel.
-2. Mantén la raíz del repositorio como Root Directory.
-3. Define `VITE_API_BASE_URL` con la URL pública del backend y el sufijo `/api`.
-4. Publica el proyecto. `vercel.json` configura el build de `frontend` y el routing de la SPA.
+1. Importa este repositorio en Vercel con la raíz como Root Directory.
+2. Vercel instalará las dependencias de la API y del frontend usando `vercel.json`.
+3. En Project Settings > Environment Variables añade para todos los entornos:
 
-## Estructura
-
-```text
-.
-├── backend/
-│   ├── src/
-│   ├── pom.xml
-│   └── README.md
-├── frontend/
-│   ├── src/
-│   ├── package.json
-│   ├── Dockerfile
-│   └── README.md
-├── vercel.json
-├── README.md
-└── .gitignore
+```env
+DATABASE_URL=postgresql://usuario:password@host.neon.tech/neondb?sslmode=require
 ```
 
-## Swagger
+4. Publica el proyecto.
 
-- `https://tu-backend-publico.com/swagger-ui.html`
+El frontend y la API se sirven desde el mismo dominio. No hace falta configurar `VITE_API_BASE_URL`; por defecto el frontend usa `/api`.
 
-## Endpoints principales
+## Base de datos Neon
 
-- `POST /api/attendance`
-- `DELETE /api/attendance/{date}`
+La API crea automáticamente la tabla `office_attendance` y su índice en el primer request.
+
+## Endpoints
+
 - `GET /api/attendance?year=2026&month=9`
 - `GET /api/attendance/summary?year=2026&month=9`
+- `POST /api/attendance` con `{ "date": "2026-09-10" }`
+- `DELETE /api/attendance/2026-09-10`
 - `GET /api/reports/monthly?year=2026&month=9&format=xlsx`
 - `GET /api/reports/monthly?year=2026&month=9&format=pdf`
 
-## Tests
-
-Backend:
+## Desarrollo
 
 ```bash
-cd backend
-mvn test
-```
-
-Frontend:
-
-```bash
-cd frontend
-npm test
+npm install
+npm install --prefix frontend
+npm run build
+npm test --prefix frontend
 ```
