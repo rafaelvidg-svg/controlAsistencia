@@ -6,8 +6,12 @@ import { attendanceApi } from './services/attendanceApi';
 vi.mock('./services/attendanceApi', () => ({
   attendanceApi: {
     getMonth: vi.fn(),
+    getVacationSettings: vi.fn(),
     createAttendance: vi.fn(),
     deleteAttendance: vi.fn(),
+    createVacation: vi.fn(),
+    deleteVacation: vi.fn(),
+    updateVacationSettings: vi.fn(),
     downloadReport: vi.fn()
   }
 }));
@@ -21,8 +25,10 @@ describe('App', () => {
       attendedDays: 0,
       remainingDays: 12,
       percentage: 0,
-      dates: []
+      dates: [],
+      vacationDates: []
     });
+    vi.mocked(attendanceApi.getVacationSettings).mockResolvedValue({ dates: [], totalDays: 10, expirationDate: '2026-12-31' });
 
     vi.mocked(attendanceApi.createAttendance).mockResolvedValue({
       id: 1,
@@ -30,6 +36,9 @@ describe('App', () => {
     });
 
     vi.mocked(attendanceApi.deleteAttendance).mockResolvedValue(undefined);
+    vi.mocked(attendanceApi.createVacation).mockResolvedValue({ id: 2, date: '2026-09-10' });
+    vi.mocked(attendanceApi.deleteVacation).mockResolvedValue(undefined);
+    vi.mocked(attendanceApi.updateVacationSettings).mockResolvedValue({ dates: [], totalDays: 10, expirationDate: '2026-12-31' });
     vi.mocked(attendanceApi.downloadReport).mockResolvedValue(undefined);
   });
 
@@ -51,7 +60,19 @@ describe('App', () => {
 
     const dayButton = (await screen.findAllByRole('button', { name: /día/i }))[0];
     await user.click(dayButton);
+    await user.click(screen.getByRole('button', { name: 'Asistencia' }));
 
     expect(attendanceApi.createAttendance).toHaveBeenCalled();
+  });
+
+  it('can register a vacation from the day choice dialog', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const dayButton = (await screen.findAllByRole('button', { name: /día/i }))[0];
+    await user.click(dayButton);
+    await user.click(screen.getByRole('button', { name: 'Vacación' }));
+
+    expect(attendanceApi.createVacation).toHaveBeenCalled();
   });
 });

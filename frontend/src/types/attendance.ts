@@ -6,6 +6,13 @@ export interface AttendanceMonthResponse {
   remainingDays: number;
   percentage: number;
   dates: string[];
+  vacationDates: string[];
+}
+
+export interface VacationSettings {
+  dates: string[];
+  totalDays: number;
+  expirationDate: string | null;
 }
 
 export interface AttendanceResponse {

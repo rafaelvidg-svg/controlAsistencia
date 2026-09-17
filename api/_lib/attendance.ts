@@ -17,7 +17,14 @@ export async function getMonthData(sql: NeonQueryFunction<false, false>, year: n
     WHERE attendance_date BETWEEN ${startDate} AND ${endDate}
     ORDER BY attendance_date ASC
   `;
+  const vacationRows = await sql`
+    SELECT vacation_date::text AS date
+    FROM office_vacations
+    WHERE vacation_date BETWEEN ${startDate} AND ${endDate}
+    ORDER BY vacation_date ASC
+  `;
   const dates = rows.map((row) => String(row.date));
+  const vacationDates = vacationRows.map((row) => String(row.date));
   const attendedDays = dates.length;
 
   return {
@@ -27,6 +34,7 @@ export async function getMonthData(sql: NeonQueryFunction<false, false>, year: n
     attendedDays,
     remainingDays: Math.max(0, MONTHLY_GOAL - attendedDays),
     percentage: MONTHLY_GOAL === 0 ? 0 : (attendedDays / MONTHLY_GOAL) * 100,
-    dates
+    dates,
+    vacationDates
   };
 }

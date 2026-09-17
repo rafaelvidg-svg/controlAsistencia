@@ -29,6 +29,25 @@ export function ensureSchema(): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_office_attendance_date
       ON office_attendance(attendance_date)
     `;
+    await client`
+      CREATE TABLE IF NOT EXISTS office_vacations (
+        id BIGSERIAL PRIMARY KEY,
+        vacation_date DATE NOT NULL UNIQUE,
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    await client`
+      CREATE TABLE IF NOT EXISTS office_vacation_settings (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        total_days INTEGER NOT NULL DEFAULT 0 CHECK (total_days >= 0),
+        expiration_date DATE
+      )
+    `;
+    await client`
+      INSERT INTO office_vacation_settings (id)
+      VALUES (1)
+      ON CONFLICT (id) DO NOTHING
+    `;
   })();
 
   return schemaReady;

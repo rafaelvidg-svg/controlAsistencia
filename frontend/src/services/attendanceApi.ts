@@ -1,4 +1,4 @@
-import { AttendanceMonthResponse, AttendanceResponse } from '../types/attendance';
+import { AttendanceMonthResponse, AttendanceResponse, VacationSettings } from '../types/attendance';
 
 const configuredApiUrl = import.meta.env.VITE_API_BASE_URL ?? '';
 const API_BASE_URL = configuredApiUrl.replace(/\/+$/, '').replace(/\/api$/, '') || '';
@@ -60,6 +60,34 @@ export const attendanceApi = {
       const errorBody = await response.json().catch(() => ({}));
       throw new Error(errorBody.message ?? 'Error al eliminar asistencia');
     }
+  },
+
+  async createVacation(date: string): Promise<AttendanceResponse> {
+    return fetchJson<AttendanceResponse>('/vacations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date })
+    });
+  },
+
+  async deleteVacation(date: string): Promise<void> {
+    const response = await fetchWithTimeout(`/vacations/${date}`, { method: 'DELETE' });
+    if (!response.ok) {
+      const errorBody = await response.json().catch(() => ({}));
+      throw new Error(errorBody.message ?? 'Error al eliminar vacaciones');
+    }
+  },
+
+  async getVacationSettings(year: number, month: number): Promise<VacationSettings> {
+    return fetchJson<VacationSettings>(`/vacations?year=${year}&month=${month}`);
+  },
+
+  async updateVacationSettings(totalDays: number, expirationDate: string): Promise<VacationSettings> {
+    return fetchJson<VacationSettings>('/vacations', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ totalDays, expirationDate: expirationDate || null })
+    });
   },
 
   async downloadReport(year: number, month: number, format: 'xlsx' | 'pdf'): Promise<void> {

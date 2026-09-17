@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { attendanceApi } from './services/attendanceApi';
-import { AttendanceMonthResponse } from './types/attendance';
+import { AttendanceMonthResponse, VacationSettings } from './types/attendance';
 import { getCalendarDays, getMonthLabel, getNextMonth, getPreviousMonth, isCurrentMonthDay, isDateToday } from './utils/dateUtils';
 
 const MONTHLY_GOAL = 12;
@@ -13,6 +13,11 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [pendingDates, setPendingDates] = useState<Set<string>>(new Set());
+  const [vacationSettings, setVacationSettings] = useState<VacationSettings>({ dates: [], totalDays: 0, expirationDate: null });
+  const [vacationDays, setVacationDays] = useState('0');
+  const [expirationDate, setExpirationDate] = useState('');
+  const [summaryTab, setSummaryTab] = useState<'attendance' | 'vacations'>('attendance');
+  const [choiceDate, setChoiceDate] = useState<string | null>(null);
 
   useEffect(() => {
     void loadMonth(currentDate);
@@ -32,6 +37,10 @@ function App() {
     try {
       const response = await attendanceApi.getMonth(date.getFullYear(), date.getMonth() + 1);
       setMonthData(response);
+      const settings = await attendanceApi.getVacationSettings(date.getFullYear(), date.getMonth() + 1);
+      setVacationSettings((current) => ({ ...settings, dates: response.vacationDates }));
+      setVacationDays(String(settings.totalDays));
+      setExpirationDate(settings.expirationDate ?? '');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar el mes');
     } finally {
@@ -42,16 +51,25 @@ function App() {
   const calendarDays = useMemo(() => getCalendarDays(currentDate), [currentDate]);
   const attendedDates = useMemo(() => new Set(monthData?.dates ?? []), [monthData]);
 
-  const handleDayClick = async (day: Date) => {
-    const dateString = format(day, 'yyyy-MM-dd');
+  const handleDayChoice = async (kind: 'attendance' | 'vacation') => {
+    if (!choiceDate || pendingDates.has(choiceDate) || !monthData) return;
+
+    const dateString = choiceDate;
     if (pendingDates.has(dateString)) return;
 
     const wasAttended = attendedDates.has(dateString);
+    const vacationDates = new Set(monthData.vacationDates);
+    const wasVacation = vacationDates.has(dateString);
+    const removing = kind === 'attendance' ? wasAttended : wasVacation;
     const previousMonthData = monthData;
-    const nextDates = wasAttended
-      ? [...attendedDates].filter((date) => date !== dateString).sort()
-      : [...attendedDates, dateString].sort();
+    const nextDates = kind === 'attendance'
+      ? (removing ? [...attendedDates].filter((date) => date !== dateString) : [...attendedDates, dateString]).sort()
+      : [...attendedDates];
+    const nextVacationDates = kind === 'vacation'
+      ? (removing ? [...vacationDates].filter((date) => date !== dateString) : [...vacationDates, dateString]).sort()
+      : [...vacationDates];
 
+    setChoiceDate(null);
     setPendingDates((dates) => new Set(dates).add(dateString));
     setMonthData((current) => {
       if (!current) return current;
@@ -60,6 +78,7 @@ function App() {
       return {
         ...current,
         dates: nextDates,
+        vacationDates: nextVacationDates,
         attendedDays,
         remainingDays: Math.max(0, current.goal - attendedDays),
         percentage: current.goal === 0 ? 0 : (attendedDays / current.goal) * 100
@@ -67,12 +86,24 @@ function App() {
     });
 
     try {
-      if (wasAttended) {
-        await attendanceApi.deleteAttendance(dateString);
-        setToast('Asistencia eliminada');
+      if (kind === 'attendance') {
+        if (wasVacation) await attendanceApi.deleteVacation(dateString);
+        if (removing) {
+          await attendanceApi.deleteAttendance(dateString);
+          setToast('Asistencia eliminada');
+        } else {
+          await attendanceApi.createAttendance(dateString);
+          setToast('✓ Asistencia registrada');
+        }
       } else {
-        await attendanceApi.createAttendance(dateString);
-        setToast('✓ Asistencia registrada');
+        if (wasAttended) await attendanceApi.deleteAttendance(dateString);
+        if (removing) {
+          await attendanceApi.deleteVacation(dateString);
+          setToast('Vacación eliminada');
+        } else {
+          await attendanceApi.createVacation(dateString);
+          setToast('✓ Vacación registrada');
+        }
       }
     } catch (err) {
       setMonthData(previousMonthData);
@@ -83,6 +114,21 @@ function App() {
         next.delete(dateString);
         return next;
       });
+    }
+  };
+
+  const handleDayClick = (day: Date) => {
+    const dateString = format(day, 'yyyy-MM-dd');
+    if (!pendingDates.has(dateString)) setChoiceDate(dateString);
+  };
+
+  const handleSaveVacationSettings = async () => {
+    try {
+      const settings = await attendanceApi.updateVacationSettings(Number(vacationDays), expirationDate);
+      setVacationSettings((current) => ({ ...current, ...settings }));
+      setToast('Datos de vacaciones guardados');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al guardar vacaciones');
     }
   };
 
@@ -156,6 +202,10 @@ function App() {
                   Asistido
                 </span>
                 <span>
+                  <i className="legend-dot dot-vacation" />
+                  Vacación
+                </span>
+                <span>
                   <i className="legend-dot dot-today" />
                   Hoy
                 </span>
@@ -172,17 +222,18 @@ function App() {
               {calendarDays.map((day) => {
                 const formatted = format(day, 'yyyy-MM-dd');
                 const isAttended = attendedDates.has(formatted);
+                const isVacation = monthData?.vacationDates.includes(formatted) ?? false;
                 const isCurrentMonth = isCurrentMonthDay(day, currentDate);
                 const isToday = isDateToday(day);
 
                 return (
                   <button
                     key={formatted}
-                    className={['day-cell', isAttended ? 'attended' : '', isCurrentMonth ? '' : 'muted', isToday ? 'today' : ''].filter(Boolean).join(' ')}
+                    className={['day-cell', isAttended ? 'attended' : '', isVacation ? 'vacation' : '', isCurrentMonth ? '' : 'muted', isToday ? 'today' : ''].filter(Boolean).join(' ')}
                     onClick={() => handleDayClick(day)}
                     disabled={pendingDates.has(formatted)}
                     aria-label={`Día ${formatted}`}
-                    aria-pressed={isAttended}
+                    aria-pressed={isAttended || isVacation}
                   >
                     <span>{format(day, 'd')}</span>
                   </button>
@@ -199,10 +250,19 @@ function App() {
               </div>
             </div>
 
+            <div className="summary-tabs" role="tablist" aria-label="Resumen">
+              <button className={summaryTab === 'attendance' ? 'active' : ''} onClick={() => setSummaryTab('attendance')} role="tab" aria-selected={summaryTab === 'attendance'}>
+                Asistencia
+              </button>
+              <button className={summaryTab === 'vacations' ? 'active' : ''} onClick={() => setSummaryTab('vacations')} role="tab" aria-selected={summaryTab === 'vacations'}>
+                Vacaciones
+              </button>
+            </div>
+
             {loading && !monthData ? (
               <div className="empty-state">Cargando...</div>
             ) : monthData ? (
-              <>
+              summaryTab === 'attendance' ? <>
                 <div className="stats-grid">
                   {stats.map((item) => (
                     <div key={item.label} className={`stat-card ${item.tone}`}>
@@ -245,13 +305,39 @@ function App() {
                     )}
                   </ul>
                 </div>
-              </>
+              </> : <div className="vacation-content">
+                <div className="vacation-fields">
+                  <label>Número de días<input type="number" min="0" value={vacationDays} onChange={(event) => setVacationDays(event.target.value)} /></label>
+                  <label>Expiran el<input type="date" value={expirationDate} onChange={(event) => setExpirationDate(event.target.value)} /></label>
+                </div>
+                <button className="primary-action save-vacation" onClick={handleSaveVacationSettings}>Guardar datos</button>
+                <div className="history">
+                  <h3>Fechas tomadas ({monthData.vacationDates.length})</h3>
+                  <ul>
+                    {monthData.vacationDates.length > 0 ? monthData.vacationDates.map((date) => <li key={date}>{format(parseISO(date), 'dd/MM/yyyy')}</li>) : <li className="empty-list">Sin vacaciones registradas</li>}
+                  </ul>
+                </div>
+              </div>
             ) : (
               <div className="empty-state">No hay datos disponibles</div>
             )}
           </aside>
         </main>
       </div>
+
+      {choiceDate && (
+        <div className="choice-backdrop" role="presentation" onClick={() => setChoiceDate(null)}>
+          <div className="choice-dialog" role="dialog" aria-modal="true" aria-labelledby="choice-title" onClick={(event) => event.stopPropagation()}>
+            <p className="label-title">{format(parseISO(choiceDate), 'dd/MM/yyyy')}</p>
+            <h2 id="choice-title">¿Cómo quieres registrar este día?</h2>
+            <div className="choice-actions">
+              <button className="primary-action" onClick={() => void handleDayChoice('attendance')}>Asistencia</button>
+              <button className="vacation-action" onClick={() => void handleDayChoice('vacation')}>Vacación</button>
+            </div>
+            <button className="dialog-cancel" onClick={() => setChoiceDate(null)}>Cancelar</button>
+          </div>
+        </div>
+      )}
 
       {toast && <div className="toast">{toast}</div>}
     </div>
