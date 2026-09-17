@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { format, parseISO } from 'date-fns';
+import { differenceInCalendarDays, format, parseISO } from 'date-fns';
 import { attendanceApi } from './services/attendanceApi';
 import { AttendanceMonthResponse, VacationSettings } from './types/attendance';
 import { getCalendarDays, getMonthLabel, getNextMonth, getPreviousMonth, isCurrentMonthDay, isDateToday } from './utils/dateUtils';
@@ -13,7 +13,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [pendingDates, setPendingDates] = useState<Set<string>>(new Set());
-  const [vacationSettings, setVacationSettings] = useState<VacationSettings>({ dates: [], totalDays: 0, expirationDate: null });
+  const [vacationSettings, setVacationSettings] = useState<VacationSettings>({ dates: [], usedDays: 0, totalDays: 0, expirationDate: null });
   const [vacationDays, setVacationDays] = useState('0');
   const [expirationDate, setExpirationDate] = useState('');
   const [summaryTab, setSummaryTab] = useState<'attendance' | 'vacations'>('attendance');
@@ -38,7 +38,7 @@ function App() {
       const response = await attendanceApi.getMonth(date.getFullYear(), date.getMonth() + 1);
       setMonthData(response);
       const settings = await attendanceApi.getVacationSettings(date.getFullYear(), date.getMonth() + 1);
-      setVacationSettings((current) => ({ ...settings, dates: response.vacationDates }));
+      setVacationSettings((current) => ({ ...current, ...settings, dates: response.vacationDates }));
       setVacationDays(String(settings.totalDays));
       setExpirationDate(settings.expirationDate ?? '');
     } catch (err) {
@@ -62,6 +62,7 @@ function App() {
     const wasVacation = vacationDates.has(dateString);
     const removing = kind === 'attendance' ? wasAttended : wasVacation;
     const previousMonthData = monthData;
+    const previousVacationSettings = vacationSettings;
     const nextDates = kind === 'attendance'
       ? (removing ? [...attendedDates].filter((date) => date !== dateString) : [...attendedDates, dateString]).sort()
       : [...attendedDates];
@@ -87,7 +88,10 @@ function App() {
 
     try {
       if (kind === 'attendance') {
-        if (wasVacation) await attendanceApi.deleteVacation(dateString);
+        if (wasVacation) {
+          await attendanceApi.deleteVacation(dateString);
+          setVacationSettings((current) => ({ ...current, usedDays: Math.max(0, current.usedDays - 1) }));
+        }
         if (removing) {
           await attendanceApi.deleteAttendance(dateString);
           setToast('Asistencia eliminada');
@@ -99,14 +103,17 @@ function App() {
         if (wasAttended) await attendanceApi.deleteAttendance(dateString);
         if (removing) {
           await attendanceApi.deleteVacation(dateString);
+          setVacationSettings((current) => ({ ...current, usedDays: Math.max(0, current.usedDays - 1) }));
           setToast('Vacación eliminada');
         } else {
           await attendanceApi.createVacation(dateString);
+          setVacationSettings((current) => ({ ...current, usedDays: current.usedDays + 1 }));
           setToast('✓ Vacación registrada');
         }
       }
     } catch (err) {
       setMonthData(previousMonthData);
+      setVacationSettings(previousVacationSettings);
       setError(err instanceof Error ? err.message : 'Error en la operación');
     } finally {
       setPendingDates((dates) => {
@@ -131,6 +138,12 @@ function App() {
       setError(err instanceof Error ? err.message : 'Error al guardar vacaciones');
     }
   };
+
+  const remainingVacationDays = Math.max(0, vacationSettings.totalDays - vacationSettings.usedDays);
+  const daysUntilExpiration = vacationSettings.expirationDate
+    ? differenceInCalendarDays(parseISO(vacationSettings.expirationDate), new Date())
+    : null;
+  const expirationWarning = daysUntilExpiration !== null && daysUntilExpiration >= 0 && daysUntilExpiration <= 30 && remainingVacationDays > 0;
 
   const handleDownload = async (format: 'xlsx' | 'pdf') => {
     try {
@@ -306,6 +319,17 @@ function App() {
                   </ul>
                 </div>
               </> : <div className="vacation-content">
+                {expirationWarning && (
+                  <div className="vacation-expiration-alert" role="alert">
+                    <strong>FECHAS PRÓXIMAS A VENCERSE</strong>
+                    <span>Toma tus días de vacaciones antes del {format(parseISO(vacationSettings.expirationDate!), 'dd/MM/yyyy')}</span>
+                  </div>
+                )}
+                <div className="vacation-balance">
+                  <span>Días de vacaciones disponibles</span>
+                  <strong>Faltan {remainingVacationDays} días de vacaciones</strong>
+                  <small>{vacationSettings.usedDays} de {vacationSettings.totalDays} días tomados</small>
+                </div>
                 <div className="vacation-fields">
                   <label>Número de días<input type="number" min="0" value={vacationDays} onChange={(event) => setVacationDays(event.target.value)} /></label>
                   <label>Expiran el<input type="date" value={expirationDate} onChange={(event) => setExpirationDate(event.target.value)} /></label>

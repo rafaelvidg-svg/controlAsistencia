@@ -11,6 +11,7 @@ export interface AttendanceMonthResponse {
 
 export interface VacationSettings {
   dates: string[];
+  usedDays: number;
   totalDays: number;
   expirationDate: string | null;
 }

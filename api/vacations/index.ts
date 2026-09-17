@@ -21,8 +21,10 @@ export default async function handler(request: VercelRequest, response: VercelRe
         getMonthData(sql, params.year, params.month),
         sql`SELECT total_days, expiration_date::text AS expiration_date FROM office_vacation_settings WHERE id = 1`
       ]);
+      const usedRows = await sql`SELECT COUNT(*) AS used_days FROM office_vacations`;
       response.status(200).json({
         dates: monthData.vacationDates,
+        usedDays: Number(usedRows[0]?.used_days ?? 0),
         totalDays: Number(settings[0]?.total_days ?? 0),
         expirationDate: settings[0]?.expiration_date ? String(settings[0].expiration_date) : null,
         startDate,
@@ -44,7 +46,8 @@ export default async function handler(request: VercelRequest, response: VercelRe
         ON CONFLICT (id) DO UPDATE SET total_days = EXCLUDED.total_days, expiration_date = EXCLUDED.expiration_date
         RETURNING total_days, expiration_date::text AS expiration_date
       `;
-      response.status(200).json({ dates: [], totalDays: Number(rows[0].total_days), expirationDate: rows[0].expiration_date ? String(rows[0].expiration_date) : null });
+      const usedRows = await sql`SELECT COUNT(*) AS used_days FROM office_vacations`;
+      response.status(200).json({ dates: [], usedDays: Number(usedRows[0]?.used_days ?? 0), totalDays: Number(rows[0].total_days), expirationDate: rows[0].expiration_date ? String(rows[0].expiration_date) : null });
       return;
     }
 

@@ -28,7 +28,7 @@ describe('App', () => {
       dates: [],
       vacationDates: []
     });
-    vi.mocked(attendanceApi.getVacationSettings).mockResolvedValue({ dates: [], totalDays: 10, expirationDate: '2026-12-31' });
+    vi.mocked(attendanceApi.getVacationSettings).mockResolvedValue({ dates: [], usedDays: 0, totalDays: 10, expirationDate: '2026-12-31' });
 
     vi.mocked(attendanceApi.createAttendance).mockResolvedValue({
       id: 1,
@@ -38,7 +38,7 @@ describe('App', () => {
     vi.mocked(attendanceApi.deleteAttendance).mockResolvedValue(undefined);
     vi.mocked(attendanceApi.createVacation).mockResolvedValue({ id: 2, date: '2026-09-10' });
     vi.mocked(attendanceApi.deleteVacation).mockResolvedValue(undefined);
-    vi.mocked(attendanceApi.updateVacationSettings).mockResolvedValue({ dates: [], totalDays: 10, expirationDate: '2026-12-31' });
+    vi.mocked(attendanceApi.updateVacationSettings).mockResolvedValue({ dates: [], usedDays: 0, totalDays: 10, expirationDate: '2026-12-31' });
     vi.mocked(attendanceApi.downloadReport).mockResolvedValue(undefined);
   });
 
@@ -74,5 +74,15 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: 'Vacación' }));
 
     expect(attendanceApi.createVacation).toHaveBeenCalled();
+  });
+
+  it('shows the remaining vacation balance', async () => {
+    const user = userEvent.setup();
+    vi.mocked(attendanceApi.getVacationSettings).mockResolvedValue({ dates: [], usedDays: 1, totalDays: 10, expirationDate: '2026-12-31' });
+    render(<App />);
+
+    await user.click(screen.getByRole('tab', { name: 'Vacaciones' }));
+
+    expect(await screen.findByText('Faltan 9 días de vacaciones')).toBeInTheDocument();
   });
 });
