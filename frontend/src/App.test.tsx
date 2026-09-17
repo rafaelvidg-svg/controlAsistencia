@@ -61,8 +61,13 @@ describe('App', () => {
     const dayButton = (await screen.findAllByRole('button', { name: /día/i }))[0];
     await user.click(dayButton);
     await user.click(screen.getByRole('button', { name: 'Asistencia' }));
+    await user.click(dayButton);
+    await user.click(screen.getByRole('button', { name: 'Asistencia' }));
+    await user.click(dayButton);
+    await user.click(screen.getByRole('button', { name: 'Asistencia' }));
 
-    expect(attendanceApi.createAttendance).toHaveBeenCalled();
+    expect(attendanceApi.createAttendance).toHaveBeenCalledTimes(2);
+    expect(attendanceApi.deleteAttendance).toHaveBeenCalledTimes(1);
   });
 
   it('can register a vacation from the day choice dialog', async () => {
@@ -72,8 +77,13 @@ describe('App', () => {
     const dayButton = (await screen.findAllByRole('button', { name: /día/i }))[0];
     await user.click(dayButton);
     await user.click(screen.getByRole('button', { name: 'Vacación' }));
+    await user.click(dayButton);
+    await user.click(screen.getByRole('button', { name: 'Vacación' }));
+    await user.click(dayButton);
+    await user.click(screen.getByRole('button', { name: 'Vacación' }));
 
-    expect(attendanceApi.createVacation).toHaveBeenCalled();
+    expect(attendanceApi.createVacation).toHaveBeenCalledTimes(2);
+    expect(attendanceApi.deleteVacation).toHaveBeenCalledTimes(1);
   });
 
   it('shows the remaining vacation balance', async () => {
