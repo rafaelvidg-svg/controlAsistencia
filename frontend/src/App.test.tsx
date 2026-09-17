@@ -18,6 +18,7 @@ vi.mock('./services/attendanceApi', () => ({
 
 describe('App', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     vi.mocked(attendanceApi.getMonth).mockResolvedValue({
       year: 2026,
       month: 9,
@@ -84,6 +85,20 @@ describe('App', () => {
 
     expect(attendanceApi.createVacation).toHaveBeenCalledTimes(2);
     expect(attendanceApi.deleteVacation).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps only one type when switching a selected day', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const dayButton = (await screen.findAllByRole('button', { name: /día/i }))[0];
+    await user.click(dayButton);
+    await user.click(screen.getByRole('button', { name: 'Asistencia' }));
+    await user.click(dayButton);
+    await user.click(screen.getByRole('button', { name: 'Vacación' }));
+
+    expect(attendanceApi.deleteAttendance).toHaveBeenCalledTimes(1);
+    expect(attendanceApi.createVacation).toHaveBeenCalledTimes(1);
   });
 
   it('shows the remaining vacation balance', async () => {

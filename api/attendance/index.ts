@@ -29,6 +29,10 @@ export default async function handler(request: VercelRequest, response: VercelRe
       }
 
       try {
+        await sql`
+          DELETE FROM office_vacations
+          WHERE vacation_date = ${date}
+        `;
         const rows = await sql`
           INSERT INTO office_attendance (attendance_date)
           VALUES (${date})

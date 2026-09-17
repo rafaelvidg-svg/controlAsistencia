@@ -65,10 +65,10 @@ function App() {
     const previousVacationSettings = vacationSettings;
     const nextDates = kind === 'attendance'
       ? (removing ? [...attendedDates].filter((date) => date !== dateString) : [...attendedDates, dateString]).sort()
-      : [...attendedDates];
+      : [...attendedDates].filter((date) => date !== dateString).sort();
     const nextVacationDates = kind === 'vacation'
       ? (removing ? [...vacationDates].filter((date) => date !== dateString) : [...vacationDates, dateString]).sort()
-      : [...vacationDates];
+      : [...vacationDates].filter((date) => date !== dateString).sort();
 
     setChoiceDate(null);
     setPendingDates((dates) => new Set(dates).add(dateString));

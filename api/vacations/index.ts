@@ -57,6 +57,10 @@ export default async function handler(request: VercelRequest, response: VercelRe
         sendError(response, 400, 'Formato de fecha inválido. Usa YYYY-MM-DD');
         return;
       }
+      await sql`
+        DELETE FROM office_attendance
+        WHERE attendance_date = ${date}
+      `;
       const rows = await sql`
         INSERT INTO office_vacations (vacation_date)
         VALUES (${date})
